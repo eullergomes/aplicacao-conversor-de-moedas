@@ -53,7 +53,6 @@ const fetchExchangeRate = async url => {
     //insert error warning after currenciesEL
     currenciesEL.insertAdjacentElement('afterend', div);
 
-    console.log(div);
     /*
     <div class="alert alert-warning alert-dismissible fade show" role="alert">
       Mensagem de erro
@@ -73,6 +72,7 @@ const init = async () => {
     .map(currency => `<option ${currency === selectedCurrency ? 'selected' : ''}>${currency}</option>`)
     .join('');
 
+  //default
   currencyOneEl.innerHTML = getOptions('USD');
   currencyTwoEl.innerHTML = getOptions('BRL');
 
@@ -84,7 +84,6 @@ const init = async () => {
 //multiplica a quantidade de moeda 1 pelo valor da moeda 2
 timeCurrencyOneEl.addEventListener('input', (e) => {
   convertedValueEl.textContent = (e.target.value * internalExchangeRate.conversion_rates[currencyTwoEl.value]).toFixed(2);
-  //console.log(e.target.value);
 });
 
 //atualiza o valor da moeda 2 ao selecionar outra moeda
@@ -98,11 +97,13 @@ currencyTwoEl.addEventListener('input', (e) => {
 
 //após o valor da primeira moeda ser alterado, é realizado um novo fetch para os valores da primeira moeda
 currencyOneEl.addEventListener('input', async e => {
-  const exchangeRateData = await fetchExchangeRate(getUrl(e.target.value));
+  // const exchangeRateData = await fetchExchangeRate(getUrl(e.target.value));
 
-  internalExchangeRate = {... exchangeRateData};
+  internalExchangeRate = {... (await fetchExchangeRate(getUrl(e.target.value)))};
   
-  console.log(internalExchangeRate);
+  convertedValueEl.textContent = (timeCurrencyOneEl.value * internalExchangeRate.conversion_rates[currencyTwoEl.value]).toFixed(2);
+
+  valuePrecissionEl.textContent = `1 ${currencyOneEl.value} = ${1 * internalExchangeRate.conversion_rates[currencyTwoEl.value]} ${currencyTwoEl.value}`;
 });
 
 
