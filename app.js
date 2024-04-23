@@ -2,24 +2,32 @@ const currencyOneEl = document.querySelector('[data-js="currency-one"]');
 const currencyTwoEl = document.querySelector('[data-js="currency-two"]');
 //div onde será inserido o aviso de erro
 const currenciesEL = document.querySelector('[data-js="currencies-container"]');
+const convertedValueEl = document.querySelector('[data-js="converted-value"]');
+const valuePrecissionEl = document.querySelector('[data-js="conversion-precision"]');
+const timeCurrencyOneEl = document.querySelector('[data-js="currency-one-times"]');
+
+let internalExchangeRate = {};
 
 const getErrorMessage = errorType => ({
-  'unsupported-code': 'a moeda não existe em nosso banco de dados',
-  'malformed-request': 'a solicitação de conversão não é válida',
-  'invalid-key': 'a chave da API não é válida',
-  'inactive-account': 'a conta está inativa',
-  'quota-reached': 'a cota de solicitações foi atingida',
-})[errorType] || 'não foi possível obter as informações'
+  'unsupported-code': 'A moeda não existe em nosso banco de dados',
+  'malformed-request': 'A solicitação de conversão não é válida',
+  'invalid-key': 'A chave da API não é válida',
+  'inactive-account': 'A conta está inativa',
+  'quota-reached': 'A cota de solicitações foi atingida',
+})[errorType] || 'Não foi possível obter as informações'
 
-const fetchExchangeRate = async () => {
+const getUrl = currency => `https://v6.exchangerate-api.com/v6/5861b7ff3ae03b0fc88cc183/latest/${currency}`;
+
+//recebe a url da API e retorna os dados da API
+const fetchExchangeRate = async url => {
   try {
-    const response = await fetch('https://v6.exchangerate-api.com/v6/5861b7ff3ae03b0fc88cc183/latest/USD');
+    const response = await fetch(url);
     const exchangeRateData = await response.json();
 
     //se request mal sucedida
-    if (!response.ok) {
-      throw new Error ('Sua conexão falhou. Não foi possível obter as informações.');
-    }
+    // if (!response.ok) {
+    //   throw new Error ('Sua conexão falhou. Não foi possível obter as informações.');
+    // }
 
     if (exchangeRateData.result === 'error') {
       throw new Error(getErrorMessage(exchangeRateData['error-type']));
@@ -42,6 +50,7 @@ const fetchExchangeRate = async () => {
     })
 
     div.appendChild(button)
+    //insert error warning after currenciesEL
     currenciesEL.insertAdjacentElement('afterend', div);
 
     console.log(div);
@@ -56,14 +65,45 @@ const fetchExchangeRate = async () => {
 
 //initialize
 const init = async () => {
-  const exchangeRateData = await fetchExchangeRate();
+  const exchangeRateData = await fetchExchangeRate(getUrl('USD'));
+
+  internalExchangeRate = {... exchangeRateData};
 
   const getOptions = selectedCurrency => Object.keys(exchangeRateData.conversion_rates)
     .map(currency => `<option ${currency === selectedCurrency ? 'selected' : ''}>${currency}</option>`)
-    .join('')
+    .join('');
 
   currencyOneEl.innerHTML = getOptions('USD');
-  currencyTwoEl.innerHTML = getOptions('BRL')
+  currencyTwoEl.innerHTML = getOptions('BRL');
+
+  convertedValueEl.textContent = exchangeRateData.conversion_rates.BRL.toFixed(2);
+
+  valuePrecissionEl.textContent = `1 ${currencyOneEl.value} = ${exchangeRateData.conversion_rates.BRL} ${currencyTwoEl.value}`;
 }
+
+//multiplica a quantidade de moeda 1 pelo valor da moeda 2
+timeCurrencyOneEl.addEventListener('input', (e) => {
+  convertedValueEl.textContent = (e.target.value * internalExchangeRate.conversion_rates[currencyTwoEl.value]).toFixed(2);
+  //console.log(e.target.value);
+});
+
+//atualiza o valor da moeda 2 ao selecionar outra moeda
+currencyTwoEl.addEventListener('input', (e) => {
+  const currencyTwoValue = internalExchangeRate.conversion_rates[e.target.value];
+
+  convertedValueEl.textContent = (timeCurrencyOneEl.value *currencyTwoValue).toFixed(2);
+  
+  valuePrecissionEl.textContent = `1 ${currencyOneEl.value} = ${1 * internalExchangeRate.conversion_rates[currencyTwoEl.value]} ${currencyTwoEl.value}`;
+});
+
+//após o valor da primeira moeda ser alterado, é realizado um novo fetch para os valores da primeira moeda
+currencyOneEl.addEventListener('input', async e => {
+  const exchangeRateData = await fetchExchangeRate(getUrl(e.target.value));
+
+  internalExchangeRate = {... exchangeRateData};
+  
+  
+});
+
 
 init();
