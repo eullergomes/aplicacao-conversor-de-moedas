@@ -65,20 +65,20 @@ const fetchExchangeRate = async url => {
 
 //initialize
 const init = async () => {
-  const exchangeRateData = await fetchExchangeRate(getUrl('USD'));
+  //const exchangeRateData = await fetchExchangeRate(getUrl('USD'));
 
-  internalExchangeRate = {... exchangeRateData};
+  internalExchangeRate = {... (await fetchExchangeRate(getUrl('USD')))};
 
-  const getOptions = selectedCurrency => Object.keys(exchangeRateData.conversion_rates)
+  const getOptions = selectedCurrency => Object.keys(internalExchangeRate.conversion_rates)
     .map(currency => `<option ${currency === selectedCurrency ? 'selected' : ''}>${currency}</option>`)
     .join('');
 
   currencyOneEl.innerHTML = getOptions('USD');
   currencyTwoEl.innerHTML = getOptions('BRL');
 
-  convertedValueEl.textContent = exchangeRateData.conversion_rates.BRL.toFixed(2);
+  convertedValueEl.textContent = internalExchangeRate.conversion_rates.BRL.toFixed(2);
 
-  valuePrecissionEl.textContent = `1 ${currencyOneEl.value} = ${exchangeRateData.conversion_rates.BRL} ${currencyTwoEl.value}`;
+  valuePrecissionEl.textContent = `1 ${currencyOneEl.value} = ${internalExchangeRate.conversion_rates.BRL} ${currencyTwoEl.value}`;
 }
 
 //multiplica a quantidade de moeda 1 pelo valor da moeda 2
@@ -102,7 +102,7 @@ currencyOneEl.addEventListener('input', async e => {
 
   internalExchangeRate = {... exchangeRateData};
   
-  
+  console.log(internalExchangeRate);
 });
 
 
